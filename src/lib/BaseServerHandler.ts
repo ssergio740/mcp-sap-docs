@@ -165,18 +165,16 @@ function extractClientMetadata(request: any): Record<string, any> {
   const metadata: Record<string, any> = {};
   
   // Try to extract available metadata from the request
-  if (request.meta) {
-    metadata.meta = request.meta;
-  }
-  
-  // Extract any client identification from headers or other sources
-  if (request.headers) {
-    metadata.headers = request.headers;
+  if (request.meta && typeof request.meta === "object") {
+    metadata.clientName = typeof request.meta.name === "string" ? request.meta.name : undefined;
+    metadata.clientVersion = typeof request.meta.version === "string" ? request.meta.version : undefined;
   }
   
   // Extract transport information if available
   if (request.transport) {
-    metadata.transport = request.transport;
+    metadata.transport = typeof request.transport === "string"
+      ? request.transport
+      : request.transport?.constructor?.name || "unknown";
   }
   
   // Extract session or connection info

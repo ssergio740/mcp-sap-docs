@@ -118,17 +118,17 @@ RUN useradd -r -u 1001 mcpuser && \
 
 USER mcpuser
 
-# Expose common Streamable HTTP ports for both variants
-EXPOSE 3122 3124
+# Expose fixed Streamable HTTP port
+EXPOSE 8090
 
 # Environment variables
 ENV NODE_ENV=production
-ENV MCP_PORT=3122
+ENV MCP_PORT=8090
 ENV MCP_HOST=0.0.0.0
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD node -e "const p=process.env.MCP_PORT||'3122'; fetch('http://localhost:'+p+'/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+  CMD node -e "fetch('http://localhost:8090/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
 
-# Start the streamable HTTP server
-CMD ["npm", "run", "start:streamable"]
+# Start the streamable HTTP server on fixed port 8090
+CMD ["sh", "-c", "MCP_PORT=8090 MCP_HOST=0.0.0.0 npm run start:streamable"]

@@ -88,6 +88,40 @@ export class Logger {
       .substring(0, 300);
   }
 
+  private sanitizeClientInfo(clientInfo?: Record<string, any>): Record<string, any> | undefined {
+    if (!clientInfo) {
+      return undefined;
+    }
+
+    const safeClient: Record<string, any> = {};
+
+    if (typeof clientInfo.requestId === 'string') {
+      safeClient.requestId = clientInfo.requestId;
+    }
+
+    if (typeof clientInfo.transport === 'string') {
+      safeClient.transport = clientInfo.transport;
+    }
+
+    if (typeof clientInfo.clientName === 'string') {
+      safeClient.clientName = clientInfo.clientName;
+    }
+
+    if (typeof clientInfo.clientVersion === 'string') {
+      safeClient.clientVersion = clientInfo.clientVersion;
+    }
+
+    if (typeof clientInfo.hasMeta === 'boolean') {
+      safeClient.hasMeta = clientInfo.hasMeta;
+    }
+
+    if (typeof clientInfo.hasTransport === 'boolean') {
+      safeClient.hasTransport = clientInfo.hasTransport;
+    }
+
+    return Object.keys(safeClient).length > 0 ? safeClient : undefined;
+  }
+
   // Setup global error handlers to catch unhandled errors
   private setupGlobalErrorHandlers(): void {
     // Handle unhandled promise rejections
@@ -136,7 +170,7 @@ export class Logger {
     this.info('Tool execution started', {
       tool,
       query: this.sanitizeQuery(query),
-      client: clientInfo,
+      client: this.sanitizeClientInfo(clientInfo),
       requestId,
       timestamp: new Date().toISOString(),
       pid: process.pid,
@@ -182,11 +216,7 @@ export class Logger {
     this.info('Tool request received', {
       tool,
       query: this.sanitizeQuery(query),
-      client: {
-        ...clientInfo,
-        userAgent: clientInfo?.headers?.['user-agent'],
-        contentType: clientInfo?.headers?.['content-type']
-      },
+      client: this.sanitizeClientInfo(clientInfo),
       timestamp: new Date().toISOString(),
       pid: process.pid,
       uptime: Date.now() - this.startTime

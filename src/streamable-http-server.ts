@@ -15,6 +15,22 @@ import { loadEmbeddingModel } from "./lib/embeddingSearch.js";
 // Version will be updated by deployment script
 const VERSION = "0.3.39";
 const variant = getVariantConfig();
+const DEFAULT_ALLOWED_ORIGINS = [
+  "http://localhost",
+  "http://127.0.0.1",
+  "https://claude.ai",
+  "https://www.claude.ai"
+];
+
+function parseAllowedOrigins(): string[] {
+  const configuredOrigins = process.env.MCP_ALLOWED_ORIGINS?.split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  return configuredOrigins && configuredOrigins.length > 0
+    ? configuredOrigins
+    : DEFAULT_ALLOWED_ORIGINS;
+}
 
 
 // Simple in-memory event store for resumability
@@ -103,7 +119,7 @@ async function main() {
   
   // Configure CORS to expose Mcp-Session-Id header for browser-based clients
   app.use(cors({
-    origin: '*', // Allow all origins - adjust as needed for production
+    origin: parseAllowedOrigins(),
     exposedHeaders: ['Mcp-Session-Id']
   }));
 

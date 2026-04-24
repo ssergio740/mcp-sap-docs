@@ -16,6 +16,22 @@ import { loadEmbeddingModel } from "./lib/embeddingSearch.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+const DEFAULT_ALLOWED_ORIGINS = [
+  "http://localhost",
+  "http://127.0.0.1",
+  "https://claude.ai",
+  "https://www.claude.ai"
+];
+
+function parseAllowedOrigins(): string[] {
+  const configuredOrigins = process.env.MCP_ALLOWED_ORIGINS?.split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  return configuredOrigins && configuredOrigins.length > 0
+    ? configuredOrigins
+    : DEFAULT_ALLOWED_ORIGINS;
+}
 
 // ---- build/package meta -----------------------------------------------------
 let packageInfo: { version: string; name: string } = { version: "unknown", name: "mcp-sap-docs" };
@@ -138,7 +154,11 @@ function json(res: any, code: number, payload: unknown) {
 // ---- server -----------------------------------------------------------------
 const server = createServer(async (req, res) => {
   // CORS (you can tighten later if needed)
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  const requestOrigin = req.headers.origin;
+  const allowedOrigins = parseAllowedOrigins();
+  if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
+    res.setHeader("Access-Control-Allow-Origin", requestOrigin);
+  }
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   if (req.method === "OPTIONS") return json(res, 200, { ok: true });

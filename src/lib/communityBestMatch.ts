@@ -25,6 +25,13 @@ type Options = {
 
 const LIQL_BASE = "https://community.sap.com/api/2.0/search";
 
+const POST_ID_PATTERN = /^\d+$/;
+
+function normalizePostId(postId: string): string | null {
+  const trimmed = postId.trim();
+  return POST_ID_PATTERN.test(trimmed) ? trimmed : null;
+}
+
 const stripTags = (html = "") =>
   html
     .replace(/&amp;/g, "&")
@@ -202,14 +209,17 @@ export async function searchAndGetTopPosts(
 // Batch retrieve multiple posts using LiQL API
 export async function getCommunityPostsByIds(postIds: string[], userAgent?: string): Promise<{ [id: string]: string }> {
   const results: { [id: string]: string } = {};
+  const normalizedPostIds = postIds
+    .map(normalizePostId)
+    .filter((id): id is string => id !== null);
   
-  if (postIds.length === 0) {
+  if (normalizedPostIds.length === 0) {
     return results;
   }
 
   try {
     // Build LiQL query for batch retrieval
-    const idList = postIds.map(id => `'${id}'`).join(', ');
+    const idList = normalizedPostIds.map(id => `'${id}'`).join(', ');
     const liqlQuery = `
       select body, id, subject, search_snippet, post_time, view_href 
       from messages 
@@ -269,8 +279,14 @@ ${post.body || post.search_snippet}
 
 // Single post retrieval using LiQL API
 export async function getCommunityPostById(postId: string, userAgent?: string): Promise<string | null> {
-  const results = await getCommunityPostsByIds([postId], userAgent);
-  return results[postId] || null;
+  const normalizedPostId = normalizePostId(postId);
+  if (!normalizedPostId) {
+    console.warn(`[SAP Community] Invalid post ID: ${postId}`);
+    return null;
+  }
+
+  const results = await getCommunityPostsByIds([normalizedPostId], userAgent);
+  return results[normalizedPostId] || null;
 }
 
 // Retrieve a community post by its URL, extracting the post ID and using the LiQL API
